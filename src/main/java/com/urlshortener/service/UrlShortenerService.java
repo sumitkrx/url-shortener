@@ -60,7 +60,7 @@ public class UrlShortenerService {
         String shortCode = "";
         do {
             shortCode = generateRandomCode();
-        } while(urlMappingRepository.existsByShortUrl(shortCode));
+        } while(urlMappingRepository.existsByShortCode(shortCode));
         return shortCode;
     }
 

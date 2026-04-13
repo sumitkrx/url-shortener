@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a; color: #e2e8f0; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 2rem 1rem;
+        }
+        h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .card {
+            background: #1e293b; border-radius: 12px; padding: 1.5rem;
+            width: 100%; max-width: 640px; margin-bottom: 1.5rem;
+            border: 1px solid #334155;
+        }
+        .input-group { display: flex; gap: 0.5rem; }
+        .input-group input {
+            flex: 1; padding: 0.75rem 1rem; border-radius: 8px;
+            border: 1px solid #475569; background: #0f172a; color: #e2e8f0;
+            font-size: 1rem; outline: none;
+        }
+        .input-group input:focus { border-color: #6366f1; }
+        .btn {
+            padding: 0.75rem 1.5rem; border-radius: 8px; border: none;
+            background: #6366f1; color: white; font-size: 1rem;
+            cursor: pointer; font-weight: 600; transition: background 0.2s;
+        }
+        .btn:hover { background: #4f46e5; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .result {
+            margin-top: 1rem; padding: 1rem; background: #0f172a;
+            border-radius: 8px; display: none; border: 1px solid #334155;
+        }
+        .result.show { display: block; }
+        .short-url {
+            font-size: 1.25rem; color: #818cf8; word-break: break-all;
+            cursor: pointer;
+        }
+        .short-url:hover { text-decoration: underline; }
+        .copied {
+            color: #34d399; font-size: 0.875rem;
+            margin-top: 0.5rem; display: none;
+        }
+        table {
+            width: 100%; border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        th {
+            text-align: left; color: #94a3b8; font-weight: 500;
+            padding: 0.75rem 0.5rem; border-bottom: 1px solid #334155;
+        }
+        td { padding: 0.75rem 0.5rem; border-bottom: 1px solid #1e293b; }
+        td a { color: #818cf8; text-decoration: none; }
+        td a:hover { text-decoration: underline; }
+        .original-url {
+            max-width: 220px; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap;
+        }
+        .clicks { color: #34d399; font-weight: 600; text-align: center; }
+        .delete-btn {
+            background: none; border: none; color: #ef4444;
+            cursor: pointer; font-size: 0.875rem; padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .delete-btn:hover { background: rgba(239,68,68,0.15); }
+        .empty { text-align: center; color: #64748b; padding: 2rem; }
+        .error {
+            color: #f87171; margin-top: 0.5rem;
+            font-size: 0.875rem; display: none;
+        }
+        h2 { font-size: 1.125rem; margin-bottom: 1rem; color: #cbd5e1; }
+    </style>
+</head>
+<body>
+
+<h1>URL Shortener</h1>
+<p class="subtitle">Paste a long URL to get started</p>
+
+<div class="card">
+    <div class="input-group">
+        <input type="url" id="urlInput"
+               placeholder="https://example.com/your-very-long-url-here"
+               autocomplete="off" autofocus>
+        <button class="btn" id="shortenBtn" onclick="shortenUrl()">
+            Shorten
+        </button>
+    </div>
+    <div class="error" id="errorMsg"></div>
+    <div class="result" id="result">
+        <span class="short-url" id="shortUrl" onclick="copyToClipboard()">
+        </span>
+        <div class="copied" id="copiedMsg">Copied to clipboard!</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Your shortened URLs</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Short URL</th>
+            <th>Original URL</th>
+            <th>Clicks</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody id="urlTableBody">
+        <tr>
+            <td colspan="4" class="empty">No URLs shortened yet</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadUrls);
+
+    document.getElementById('urlInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') shortenUrl();
+    });
+
+    async function shortenUrl() {
+        var input = document.getElementById('urlInput');
+        var btn = document.getElementById('shortenBtn');
+        var errorEl = document.getElementById('errorMsg');
+        var resultEl = document.getElementById('result');
+
+        var url = input.value.trim();
+        if (!url) { showError('Please enter a URL'); return; }
+
+        btn.disabled = true;
+        btn.textContent = '...';
+        errorEl.style.display = 'none';
+
+        try {
+            var res = await fetch('/api/shorten', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            });
+
+            if (!res.ok) {
+                var err = await res.json();
+                throw new Error(err.error || 'Something went wrong');
+            }
+
+            var data = await res.json();
+            document.getElementById('shortUrl').textContent = data.shortUrl;
+            resultEl.classList.add('show');
+            input.value = '';
+            loadUrls();
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Shorten';
+        }
+    }
+
+    async function loadUrls() {
+        try {
+            var res = await fetch('/api/urls');
+            var urls = await res.json();
+            var tbody = document.getElementById('urlTableBody');
+
+            if (urls.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="4" class="empty">No URLs shortened yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = urls.map(function(u) {
+                return '<tr>'
+                    + '<td><a href="' + u.shortUrl + '" target="_blank">'
+                    + u.shortCode + '</a></td>'
+                    + '<td class="original-url" title="' + u.originalUrl + '">'
+                    + '<a href="' + u.originalUrl + '" target="_blank">'
+                    + u.originalUrl + '</a></td>'
+                    + '<td class="clicks">' + u.clickCount + '</td>'
+                    + '<td><button class="delete-btn" onclick="deleteUrl(\''
+                    + u.shortCode + '\')">X</button></td>'
+                    + '</tr>';
+            }).join('');
+        } catch (err) {
+            console.error('Failed to load URLs:', err);
+        }
+    }
+
+    async function deleteUrl(shortCode) {
+        if (!confirm('Delete this short URL?')) return;
+        await fetch('/api/urls/' + shortCode, { method: 'DELETE' });
+        loadUrls();
+    }
+
+    function copyToClipboard() {
+        var text = document.getElementById('shortUrl').textContent;
+        navigator.clipboard.writeText(text);
+        var msg = document.getElementById('copiedMsg');
+        msg.style.display = 'block';
+        setTimeout(function() { msg.style.display = 'none'; }, 2000);
+    }
+
+    function showError(msg) {
+        var el = document.getElementById('errorMsg');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
