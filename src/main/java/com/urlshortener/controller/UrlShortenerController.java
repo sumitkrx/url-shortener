@@ -25,7 +25,7 @@ public class UrlShortenerController {
         @Valid @RequestBody ShortenRequest request,
                 HttpServletRequest httpRequest){
 
-        UrlMapping mapping = urlShortenerService.shortenUrl(request.url());
+        UrlMapping mapping = urlShortenerService.shortenUrl(request.url(), request.customAlias());
         String baseUrl = getBaseUrl(httpRequest);
         ShortenResponse response = ShortenResponse.fromEntity(mapping,baseUrl);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

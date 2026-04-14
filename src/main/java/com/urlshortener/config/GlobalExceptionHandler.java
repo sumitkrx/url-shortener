@@ -32,4 +32,12 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error","An unexpected error occurred: " + ex.getMessage()));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String,String>> handleIllegalArgument(
+            IllegalArgumentException ex){
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage()));
+    }
 }

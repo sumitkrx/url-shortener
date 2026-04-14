@@ -20,9 +20,18 @@ public class UrlShortenerService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Transactional
-    public UrlMapping shortenUrl(String originalUrl){
+    public UrlMapping shortenUrl(String originalUrl, String customAlias) {
         String normalizedUrl = normalizedUrl(originalUrl);
-        String shortCode = generateUniqueShortCode();
+        String shortCode;
+
+        if(customAlias != null && !customAlias.isBlank()) {
+            if(urlMappingRepository.existsByShortCode(customAlias)) {
+                throw new IllegalArgumentException("Alias '" + customAlias + "' is already taken");
+            }
+            shortCode = customAlias;
+        } else {
+            shortCode = generateUniqueShortCode();
+        }
         UrlMapping mapping = new UrlMapping(shortCode, normalizedUrl);
         return urlMappingRepository.save(mapping);
     }
