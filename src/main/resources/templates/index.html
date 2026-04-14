@@ -87,6 +87,9 @@
         <input type="url" id="urlInput"
                placeholder="https://example.com/your-very-long-url-here"
                autocomplete="off" autofocus>
+        <input type="text" id="aliasInput"
+               placeholder="custom alias (optional)"
+               style="max-width: 180px;">
         <button class="btn" id="shortenBtn" onclick="shortenUrl()">
             Shorten
         </button>
@@ -125,8 +128,16 @@
         if (e.key === 'Enter') shortenUrl();
     });
 
+    document.getElementById('aliasInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') shortenUrl();
+    });
+
+    // Poll every 5 seconds to refresh click counts
+    setInterval(loadUrls, 5000);
+
     async function shortenUrl() {
         var input = document.getElementById('urlInput');
+        var aliasInput = document.getElementById('aliasInput');
         var btn = document.getElementById('shortenBtn');
         var errorEl = document.getElementById('errorMsg');
         var resultEl = document.getElementById('result');
@@ -134,15 +145,22 @@
         var url = input.value.trim();
         if (!url) { showError('Please enter a URL'); return; }
 
+        var alias = aliasInput.value.trim();
+
         btn.disabled = true;
         btn.textContent = '...';
         errorEl.style.display = 'none';
 
         try {
+            var body = { url: url };
+            if (alias) {
+                body.customAlias = alias;
+            }
+
             var res = await fetch('/api/shorten', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url })
+                body: JSON.stringify(body)
             });
 
             if (!res.ok) {
@@ -154,6 +172,7 @@
             document.getElementById('shortUrl').textContent = data.shortUrl;
             resultEl.classList.add('show');
             input.value = '';
+            aliasInput.value = '';
             loadUrls();
         } catch (err) {
             showError(err.message);
