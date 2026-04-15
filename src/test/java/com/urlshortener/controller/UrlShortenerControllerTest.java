@@ -39,7 +39,7 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("POST /api/shorten creates a short URL")
     void shorten_returnsCreated() throws Exception {
-        ShortenRequest request = new ShortenRequest("https://github.com", null);
+        ShortenRequest request = new ShortenRequest("https://github.com", null,null);
 
         mockMvc.perform(post("/api/shorten")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -55,7 +55,7 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("POST /api/shorten with custom alias uses that alias")
     void shorten_withCustomAlias() throws Exception {
-        ShortenRequest request = new ShortenRequest("https://github.com", "github");
+        ShortenRequest request = new ShortenRequest("https://github.com", "github",null);
 
         mockMvc.perform(post("/api/shorten")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -67,9 +67,9 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("POST /api/shorten with duplicate alias returns 409")
     void shorten_duplicateAliasReturnsConflict() throws Exception {
-        urlMappingRepository.save(new UrlMapping("taken", "https://example.com"));
+        urlMappingRepository.save(new UrlMapping("taken", "https://example.com",null));
 
-        ShortenRequest request = new ShortenRequest("https://github.com", "taken");
+        ShortenRequest request = new ShortenRequest("https://github.com", "taken",null);
 
         mockMvc.perform(post("/api/shorten")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -81,7 +81,7 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("POST /api/shorten with blank URL returns 400")
     void shorten_blankUrlReturnsBadRequest() throws Exception {
-        ShortenRequest request = new ShortenRequest("", null);
+        ShortenRequest request = new ShortenRequest("", null,null);
 
         mockMvc.perform(post("/api/shorten")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -93,8 +93,8 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("GET /api/urls returns all shortened URLs")
     void getAllUrls_returnsList() throws Exception {
-        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com"));
-        urlMappingRepository.save(new UrlMapping("xyz789", "https://google.com"));
+        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com",null));
+        urlMappingRepository.save(new UrlMapping("xyz789", "https://google.com",null));
 
         mockMvc.perform(get("/api/urls"))
                 .andExpect(status().isOk())
@@ -106,7 +106,7 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("GET /api/stats/{code} returns stats for existing code")
     void getStats_returnsStats() throws Exception {
-        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com"));
+        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com",null));
 
         mockMvc.perform(get("/api/stats/abc123"))
                 .andExpect(status().isOk())
@@ -124,7 +124,7 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("DELETE /api/urls/{code} deletes existing URL")
     void delete_removesUrl() throws Exception {
-        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com"));
+        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com",null));
 
         mockMvc.perform(delete("/api/urls/abc123"))
                 .andExpect(status().isOk())
@@ -143,7 +143,7 @@ class UrlShortenerControllerTest {
     @Test
     @DisplayName("GET /{shortCode} redirects to original URL")
     void redirect_sendsToOriginalUrl() throws Exception {
-        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com"));
+        urlMappingRepository.save(new UrlMapping("abc123", "https://github.com",null));
 
         mockMvc.perform(get("/abc123"))
                 .andExpect(status().isFound())

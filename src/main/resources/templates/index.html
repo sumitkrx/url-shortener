@@ -88,8 +88,12 @@
                placeholder="https://example.com/your-very-long-url-here"
                autocomplete="off" autofocus>
         <input type="text" id="aliasInput"
-               placeholder="custom alias (optional)"
-               style="max-width: 180px;">
+               placeholder="custom alias"
+               style="max-width: 140px;">
+        <input type="number" id="expiresInput"
+               placeholder="hours"
+               min="1" max="8760"
+               style="max-width: 80px;">
         <button class="btn" id="shortenBtn" onclick="shortenUrl()">
             Shorten
         </button>
@@ -110,6 +114,7 @@
             <th>Short URL</th>
             <th>Original URL</th>
             <th>Clicks</th>
+            <th>Expires</th>
             <th></th>
         </tr>
         </thead>
@@ -141,6 +146,7 @@
         var btn = document.getElementById('shortenBtn');
         var errorEl = document.getElementById('errorMsg');
         var resultEl = document.getElementById('result');
+        var expires = document.getElementById('expiresInput').value;
 
         var url = input.value.trim();
         if (!url) { showError('Please enter a URL'); return; }
@@ -155,6 +161,9 @@
             var body = { url: url };
             if (alias) {
                 body.customAlias = alias;
+            }
+            if(expires){
+                body.expiresInHours = parseInt(expires);
             }
 
             var res = await fetch('/api/shorten', {
@@ -173,6 +182,7 @@
             resultEl.classList.add('show');
             input.value = '';
             aliasInput.value = '';
+            document.getElementById('expiresInput').value = '';
             loadUrls();
         } catch (err) {
             showError(err.message);
@@ -195,6 +205,9 @@
             }
 
             tbody.innerHTML = urls.map(function(u) {
+                var expiry = u.expiresAt
+                    ? new Date(u.expiresAt).toLocaleString()
+                    : 'Never';
                 return '<tr>'
                     + '<td><a href="' + u.shortUrl + '" target="_blank">'
                     + u.shortCode + '</a></td>'
@@ -202,6 +215,7 @@
                     + '<a href="' + u.originalUrl + '" target="_blank">'
                     + u.originalUrl + '</a></td>'
                     + '<td class="clicks">' + u.clickCount + '</td>'
+                    + '<td style="font-size:0.8rem;color:#94a3b8">' + expiry + '</td>'
                     + '<td><button class="delete-btn" onclick="deleteUrl(\''
                     + u.shortCode + '\')">X</button></td>'
                     + '</tr>';

@@ -7,7 +7,8 @@ public record ShortenResponse (
         String shortUrl,
         String originalUrl,
         Long clickCount,
-        LocalDateTime createAt
+        LocalDateTime createAt,
+        LocalDateTime expiresAt
 ) {
     public static ShortenResponse fromEntity(UrlMapping mapping, String baseUrl) {
         return new ShortenResponse(
@@ -15,7 +16,8 @@ public record ShortenResponse (
                 baseUrl + "/" + mapping.getShortCode(),
                 mapping.getOriginalUrl(),
                 mapping.getClickCount(),
-                mapping.getCreatedAt()
+                mapping.getCreatedAt(),
+                mapping.getExpiresAt()
         );
     }
 }

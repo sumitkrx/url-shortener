@@ -11,5 +11,7 @@ public record ShortenRequest (
 
     @Size(min = 3, max = 10, message = "Alias must be 3-10 characters")
     @Pattern(regexp = "^[a-zA-Z0-9]*$", message = "Alias must be alphanumeric only")
-    String customAlias
+    String customAlias,
+
+    Integer expiresInHours
 ){}

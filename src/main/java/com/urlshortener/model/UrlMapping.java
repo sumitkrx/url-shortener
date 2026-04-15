@@ -32,13 +32,19 @@ public class UrlMapping {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public UrlMapping(String shortCode,String originalUrl) {
+    private LocalDateTime expiresAt;
+
+    public UrlMapping(String shortCode,String originalUrl, LocalDateTime expiresAt) {
         this.shortCode = shortCode;
         this.originalUrl = originalUrl;
         this.clickCount = 0L;
+        this.expiresAt = expiresAt;
     }
 
     public void incrementClickCount(){
         this.clickCount++;
+    }
+    public boolean isExpired(){
+        return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
     }
 }

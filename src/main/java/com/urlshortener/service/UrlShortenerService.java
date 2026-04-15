@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +21,7 @@ public class UrlShortenerService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Transactional
-    public UrlMapping shortenUrl(String originalUrl, String customAlias) {
+    public UrlMapping shortenUrl(String originalUrl, String customAlias, Integer expiresInHours) {
         String normalizedUrl = normalizedUrl(originalUrl);
         String shortCode;
 
@@ -32,17 +33,24 @@ public class UrlShortenerService {
         } else {
             shortCode = generateUniqueShortCode();
         }
-        UrlMapping mapping = new UrlMapping(shortCode, normalizedUrl);
+        LocalDateTime expiresAt = null;
+        if(expiresInHours != null && expiresInHours > 0) {
+            expiresAt = LocalDateTime.now().plusHours(expiresInHours);
+        }
+        UrlMapping mapping = new UrlMapping(shortCode, normalizedUrl,expiresAt);
         return urlMappingRepository.save(mapping);
     }
 
     @Transactional
     public Optional<String> resolveAndTrack(String shortCode){
         return urlMappingRepository.findByShortCode(shortCode)
-                .map(mapping -> {
+                .flatMap(mapping -> {
+                    if(mapping.isExpired()){
+                        return Optional.empty();
+                    }
                     mapping.incrementClickCount();
                     urlMappingRepository.save(mapping);
-                    return mapping.getOriginalUrl();
+                    return Optional.of(mapping.getOriginalUrl());
                 });
     }
 

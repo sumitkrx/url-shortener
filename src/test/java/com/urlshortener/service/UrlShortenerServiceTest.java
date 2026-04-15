@@ -31,7 +31,7 @@ class UrlShortenerServiceTest {
 
     @BeforeEach
     void setUp() {
-        sampleMapping = new UrlMapping("abc123", "https://github.com");
+        sampleMapping = new UrlMapping("abc123", "https://github.com", null);
         sampleMapping.setId(1L);
     }
 
@@ -41,7 +41,7 @@ class UrlShortenerServiceTest {
         when(urlMappingRepository.existsByShortCode(anyString())).thenReturn(false);
         when(urlMappingRepository.save(any(UrlMapping.class))).thenReturn(sampleMapping);
 
-        UrlMapping result = urlShortenerService.shortenUrl("https://github.com", null);
+        UrlMapping result = urlShortenerService.shortenUrl("https://github.com", null,null);
 
         assertThat(result).isNotNull();
         assertThat(result.getOriginalUrl()).isEqualTo("https://github.com");
@@ -55,7 +55,7 @@ class UrlShortenerServiceTest {
         when(urlMappingRepository.save(any(UrlMapping.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        UrlMapping result = urlShortenerService.shortenUrl("github.com", null);
+        UrlMapping result = urlShortenerService.shortenUrl("github.com", null,null);
 
         assertThat(result.getOriginalUrl()).isEqualTo("https://github.com");
     }
@@ -67,7 +67,7 @@ class UrlShortenerServiceTest {
         when(urlMappingRepository.save(any(UrlMapping.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        UrlMapping result = urlShortenerService.shortenUrl("https://github.com", "myalias");
+        UrlMapping result = urlShortenerService.shortenUrl("https://github.com", "myalias",null);
 
         assertThat(result.getShortCode()).isEqualTo("myalias");
     }
@@ -77,7 +77,7 @@ class UrlShortenerServiceTest {
     void shortenUrl_rejectsDuplicateAlias() {
         when(urlMappingRepository.existsByShortCode("taken")).thenReturn(true);
 
-        assertThatThrownBy(() -> urlShortenerService.shortenUrl("https://github.com", "taken"))
+        assertThatThrownBy(() -> urlShortenerService.shortenUrl("https://github.com", "taken",null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("already taken");
     }
